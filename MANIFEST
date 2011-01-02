@@ -1,0 +1,10 @@
+Build.PL
+Changes
+MANIFEST
+README
+lib/Math/Continuedfraction.pm
+t/from_ratio.t
+t/to_ascii.t
+t/pod.t
+Makefile.PL
+META.yml

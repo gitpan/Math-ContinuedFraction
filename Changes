@@ -1,0 +1,7 @@
+Revision history for Math-Continuedfractions
+
+0.10    1 January 2011
+	- Very basic version released: Can create CF objects two
+	  different ways, and return array form, ascii array form,
+	  and convergents using BigRat and BigInt types.
+
