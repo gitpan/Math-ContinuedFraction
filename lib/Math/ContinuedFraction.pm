@@ -1,15 +1,16 @@
-package Math::Continuedfraction;
+package Math::ContinuedFraction;
 
 use warnings;
 use strict;
+use Carp;
 use Math::BigInt;
 use Math::BigRat;
 #use Smart::Comments;
 
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
 #
-# $cf = Math::Continuedfraction->new([1, 1, 1, 1, [3, 2, 3, 2]]);
+# $cf = Math::ContinuedFraction->new([1, 1, 1, 1, [3, 2, 3, 2]]);
 #
 #
 sub new
@@ -20,7 +21,7 @@ sub new
 
 	if (ref $class)
 	{
-		if ($class->isa("Math::Continuedfraction"))
+		if ($class->isa(__PACKAGE__))
 		{
 			$class->_copy($self);
 			return bless($self, ref $class);
@@ -30,6 +31,8 @@ sub new
 			ref $class, "' object fail.\n";
 		return undef;
 	}
+
+	bless($self, $class);
 
 	#
 	# We're not creating a copy of an existing CF, so start from
@@ -47,40 +50,52 @@ sub new
 		#
 		my($a_ref, $b_ref) = @_;
 
-		#
-		# Complain bitterly if we weren't passed an ARRAY reference.
-		#
-		if (ref $a_ref ne "ARRAY")
+		if (ref $a_ref eq "ARRAY")
 		{
-			warn "Math::Continuedfraction->new() takes either an array reference or another Continued Fraction object";
+			my(@seq) = @$a_ref;
+
+			#
+			# See if there's a repeating component. If there is, check for
+			# one of those "Why are you doing that" empty array cases.
+			#
+			if (ref $seq[$#seq] eq "ARRAY")
+			{
+				my @r = @{ pop @seq };
+				$self->{repeat} = [@r] if (scalar @r > 0);
+			}
+
+			#
+			# Another empty array case check, this one slightly legitimate.
+			#
+			$self->{simple} = (scalar @seq)? [@seq]: [0];
+		}
+		elsif (ref $a_ref eq "Math::BigRat")
+		{
+			my($n, $d) = $a_ref->parts();
+
+			#
+			# Do from_ratio stuff.
+			#
+			$self->from_ratio($n, $d);
+		}
+		else
+		{
+			#
+			# Complain bitterly if we weren't passed an ARRAY or
+			# BigRat reference.
+			#
+			carp __PACKAGE__ .
+				"->new() takes either an array reference or a Math::BigRat object or another " .
+				__PACKAGE__ . " object";
 			return undef;
 		}
-
-		my(@seq) = @$a_ref;
-
-		#
-		# See if there's a repeating component. If there is, check for
-		# one of those "Why are you doing that" empty array cases.
-		#
-		if (ref $seq[$#seq] eq "ARRAY")
-		{
-			my @r = @{ pop @seq };
-			$self->{repeat} = [@r] if (scalar @r > 0);
-		}
-
-		#
-		# Another empty array case check, this one slightly legitimate.
-		#
-		$self->{simple} = (scalar @seq)? [@seq]: [0];
 	}
 
-	bless($self, $class);
 	return $self;
-
 }
 
 #
-# my $cf67_29 = Math::Continuedfraction->from_ratio(67, 29);
+# my $cf67_29 = Math::ContinuedFraction->from_ratio(67, 29);
 #
 # Create a continued fraction from a simple ratio.
 # These CFs will always be the simple types.
@@ -101,6 +116,7 @@ sub from_ratio
 		my $r = $n % $d;
 
 		push @cf, $q;
+		last LOOP if ($r == 0);
 		if ($r == 1)
 		{
 			push @cf, $d;
@@ -112,9 +128,48 @@ sub from_ratio
 
 	$self->{simple} = [@cf];
 	$self->{repeat} = undef;
-	bless($self, $class);
+	return bless($self, $class);
+}
 
-	return $self;
+#
+# $qs = Math::ContinuedFraction->from_quadratic($a, $b, $c);
+#
+sub from_root
+{
+	my $class = shift;
+	my($dis) = @_;
+	my $self = {};
+	my(@repeat);
+
+	my($p, $q) = (0, 1);
+	my($a0, $a, $last);
+	$last = 2 * ($a0 = $a = int(sqrt($dis)));
+
+	for (;;)
+	{
+		$p = $a * $q - $p;
+		$q = ($dis - $p**2)/$q;
+		$a = int(($a0 + $p)/$q);
+		push @repeat, $a;
+		last if ($last == $a);
+	}
+
+	$self->{simple} = [$a0];
+	$self->{repeat} = [@repeat];
+	return bless($self, $class);
+}
+
+#
+# $qs = Math::ContinuedFraction->from_quadratic($a, $b, $c);
+#
+sub from_quadratic
+{
+	my $self = shift;
+	my(@coefficients) = @_;
+
+	while (@coefficients)
+	{
+	}
 }
 
 #
@@ -284,7 +339,7 @@ sub _copy
 
 =head1 NAME
 
-Math::Continuedfraction - Create and Manipulate Continued Fractions.
+Math::ContinuedFraction - Create and Manipulate Continued Fractions.
 
 =head1 SYNOPSIS
 
@@ -292,15 +347,15 @@ Quick summary of what the module does.
 
 Perhaps a little code snippet.
 
-    use Math::Continuedfraction;
+    use Math::ContinuedFraction;
 
     #
     # Create new continued fraction objects.
     #
-    my $cf = Math::Continuedfraction->new([1, 4, 9, 25]);
-    my $cf_phi = Math::Continuedfraction->new([1, [1]]);
+    my $cf = Math::ContinuedFraction->new([1, 4, 9, 25]);
+    my $cf_phi = Math::ContinuedFraction->new([1, [1]]);
  
-    my $cf_67div29 = Math::Continuedfraction->from_ratio(67, 29);
+    my $cf_67div29 = Math::ContinuedFraction->from_ratio(67, 29);
 
 
 =head1 DESCRIPTION
@@ -339,12 +394,12 @@ that notation.
 
 Create a new continued fraction object from an array.
 
-    my $cf = Math::Continuedfraction([1, [2, 1]]);
+    my $cf = Math::ContinuedFraction([1, [2, 1]]);
 
 Arrays are in the form C<[finite_sequence, [repeating_sequence]]>. A continued fraction
 with no repeating part simply omits the embedded array reference:
 
-    my $cf = Math::Continuedfraction([1, 2, 1, 3, 1, 5]);
+    my $cf = Math::ContinuedFraction([1, 2, 1, 3, 1, 5]);
 
 =head3 from_ratio()
 
@@ -368,7 +423,7 @@ continued fractions will stop at the end of the sequence without warning.
     # The array stops at seven elements for simplicity's sake,
     # the sequence actually does not end.
     #
-    my $cfpi = Math::Continuedfraction([3, 7, 15, 1, 292, 1, 1]);
+    my $cfpi = Math::ContinuedFraction([3, 7, 15, 1, 292, 1, 1]);
 
     for my $j (1..4)
     {
@@ -389,7 +444,7 @@ object instead of two Math::BigInt objects.
     # The array stops at seven elements for simplicity's sake,
     # the sequence actually does not end.
     #
-    my $cfpi = Math::Continuedfraction([3, 7, 15, 1, 292, 1, 1]);
+    my $cfpi = Math::ContinuedFraction([3, 7, 15, 1, 292, 1, 1]);
 
     for my $j (1..4)
     {
@@ -402,15 +457,15 @@ object instead of two Math::BigInt objects.
 
 Returns an array reference that can be used to create a continued fraction (see L</new()>).
 
-    my $cf = Math::Continuedfraction->from_ratio(0xfff1, 0x7fed);
+    my $cf = Math::ContinuedFraction->from_ratio(0xfff1, 0x7fed);
     my $aref = $cf->to_array()
-    my $cf2 = Math::Continuedfraction->new($aref);
+    my $cf2 = Math::ContinuedFraction->new($aref);
 
 =head3 to_ascii()
 
 Returns the string form of the array reference.
 
-    my $cf = Math::Continuedfraction->from_ratio(0xfff1, 0x7fed);
+    my $cf = Math::ContinuedFraction->from_ratio(0xfff1, 0x7fed);
     print $cf->to_ascii(), "\n";
 
 Returns C<[2, 1432, 1, 6, 1, 2]>.
@@ -436,4 +491,4 @@ See http://dev.perl.org/licenses/ for more information.
 
 =cut
 
-1; # End of Math::Continuedfraction
+1; # End of Math::ContinuedFraction

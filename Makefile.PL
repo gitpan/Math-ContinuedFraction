@@ -4,9 +4,9 @@ WriteMakefile
 (
           'PL_FILES' => {},
           'INSTALLDIRS' => 'site',
-          'NAME' => 'Math::Continuedfraction',
+          'NAME' => 'Math::ContinuedFraction',
           'EXE_FILES' => [],
-          'VERSION_FROM' => 'lib/Math/Continuedfraction.pm',
+          'VERSION_FROM' => 'lib/Math/ContinuedFraction.pm',
           'PREREQ_PM' => {
                            'Test::Simple' => 0,
                            'Math::BigRat' => 0

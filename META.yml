@@ -1,6 +1,6 @@
 ---
-name: Math-Continuedfraction
-version: 0.10
+name: Math-ContinuedFraction
+version: 0.11
 author:
   - 'John M. Gamble <jgamble@cpan.org>'
 abstract: Create and Manipulate Continued Fractions.
@@ -14,9 +14,9 @@ requires:
 configure_requires:
   Module::Build: 0.340201
 provides:
-  Math::Continuedfraction:
-    file: lib/Math/Continuedfraction.pm
-    version: 0.10
+  Math::ContinuedFraction:
+    file: lib/Math/ContinuedFraction.pm
+    version: 0.11
 generated_by: Module::Build version 0.340201
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
